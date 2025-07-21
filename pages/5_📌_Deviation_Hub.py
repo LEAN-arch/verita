@@ -8,22 +8,12 @@
 # This module is the central, interactive workspace for managing the lifecycle
 # of all quality events (deviations, OOS, OOT). It is designed to be the
 # single source of truth for investigations.
-#
-# Key Upgrades:
-# - Investigation Pane: Clicking a card opens a detailed view with tabs for
-#   linked data, Root Cause Analysis (RCA), and CAPA planning.
-# - Structured RCA & CAPA Forms: Provides guided forms for investigators to
-#   document their findings in a standardized way, improving consistency.
-# - Seamless Workflow Integration: Deviations created from the QC Center appear
-#   here automatically, and all status changes are logged to the audit trail.
 # ==============================================================================
 
 import streamlit as st
 import pandas as pd
 
 # Import the core backend components.
-# --- IMPORT ERROR FIX ---
-# This file now correctly imports only the necessary high-level modules.
 from veritas_core import session, auth
 
 # --- 1. PAGE SETUP AND AUTHENTICATION ---
@@ -33,6 +23,8 @@ session_manager.initialize_page("Deviation Hub", "📌")
 # --- 2. DATA LOADING & CONFIG ---
 deviations_df = session_manager.get_data('deviations')
 hplc_data = session_manager.get_data('hplc')
+# --- ATTRIBUTE ERROR FIX ---
+# Changed settings.APP to settings.app
 dev_config = session_manager.settings.app.deviation_management
 
 # --- 3. PAGE HEADER ---
@@ -46,13 +38,11 @@ with st.expander("ℹ️ SME Overview: Digitalizing the Investigation Workflow")
     """)
 
 # --- 4. INVESTIGATION PANE (MODAL/EXPANDER LOGIC) ---
-# This feature makes the hub an active workspace, not just a viewer.
 query_params = st.query_params
 selected_dev_id = query_params.get("selected_dev_id")
 
 if selected_dev_id:
     st.header(f"Investigation Pane: {selected_dev_id}", divider='blue')
-    # The SessionManager handles the logic of retrieving the specific deviation details.
     deviation_data = session_manager.get_deviation_details(selected_dev_id)
     
     if deviation_data.empty:
@@ -96,7 +86,6 @@ if selected_dev_id:
 
         col1, col2, _ = st.columns([1, 1, 4])
         if col1.button("💾 Save Investigation", type="primary"):
-            # In a real app, this would call a SessionManager method to save the updated investigation details.
             st.success(f"Investigation details for {selected_dev_id} saved.")
         
         if col2.page_link("pages/5_📌_Deviation_Hub.py", label="Close Pane", icon="✖️"):
@@ -115,17 +104,13 @@ for i, status in enumerate(dev_config.kanban_states):
         
         for index, card_data in cards_in_column.iterrows():
             card_id = card_data['id']
-            # Using st.popover for a cleaner, more modern UI than a full page reload/navigation
             with st.popover(f"**{card_id}**: {card_data['title']}", use_container_width=True):
                 st.markdown(f"**Priority:** {card_data['priority']}")
                 st.markdown(f"**Linked Record:** `{card_data['linked_record']}`")
-                # This provides a direct link to the full investigation pane for editing
                 st.page_link(f"pages/5_📌_Deviation_Hub.py?selected_dev_id={card_id}", label="Open Full Investigation Pane...", icon="➡️")
 
-            # The "Advance" button logic
             if status != dev_config.kanban_states[-1]:
                 if st.button("▶️ Advance Status", key=f"advance_{card_id}", help=f"Move from {status} to next stage"):
-                    # The SessionManager handles the logic of updating the state and logging the audit.
                     session_manager.advance_deviation_status(card_id, status)
                     st.rerun()
             st.markdown("<hr style='margin-top: 5px; margin-bottom: 5px;'/>", unsafe_allow_html=True)
