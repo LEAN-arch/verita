@@ -37,29 +37,36 @@ def _check_page_authorization():
     Internal function to check if the current user's role is authorized to
     view the currently executing Streamlit page. This is the core of RBAC.
     """
-    # --- ATTRIBUTE ERROR FIX ---
-    # `st.main_script_path` is deprecated. The modern, correct attribute is
-    # `st.source_file_path`. This change resolves the AttributeError.
-    current_page_script = os.path.basename(st.source_file_path)
+    # --- DEFINITIVE ATTRIBUTE ERROR FIX ---
+    # `st.main_script_path` and `st.source_file_path` are unreliable.
+    # The robust method is to use the page script hash from session state
+    # and look it up in the dictionary of registered pages. This is the
+    # correct, modern way to identify the current page in a multi-page app.
+    try:
+        page_script_hash = st.session_state.get("page_script_hash")
+        pages = st.get_pages("") # The argument is the main script path, "" works for current
+        current_page_info = pages.get(page_script_hash)
+        
+        if current_page_info:
+            current_page_script = os.path.basename(current_page_info["page_script_path"])
+        else:
+            # Fallback for the main page which doesn't always have a hash
+            current_page_script = "VERITAS_Home.py"
+            
+    except Exception:
+        # Failsafe in case the API changes again. Default to the home page.
+        current_page_script = "VERITAS_Home.py"
+
     user_role = st.session_state.get('user_role', '')
     
     # Get permissions from the Pydantic settings model
     page_permissions = settings.AUTH.page_permissions
-    
-    # Handle the main entry point (Home page) which might have a different name
-    # This makes the authorization more robust.
-    home_page_filename = "VERITAS_Home.py"
-    if current_page_script not in page_permissions:
-        # If the script isn't in permissions, check if it's the home page
-        if os.path.basename(st.script_run_context.get_script_run_ctx().main_script_path) == current_page_script:
-            current_page_script = home_page_filename
-
     authorized_roles = page_permissions.get(current_page_script)
     
     if authorized_roles is None or user_role not in authorized_roles:
         st.error("🔒 Access Denied")
         st.warning(f"Your assigned role ('{user_role}') does not have permission to view this page.")
-        st.page_link(home_page_filename, label="Return to Mission Control", icon="⬅️")
+        st.page_link("VERITAS_Home.py", label="Return to Mission Control", icon="⬅️")
         st.stop() # Stop script execution immediately
 
 def render_sidebar():
@@ -85,7 +92,6 @@ def render_sidebar():
     
     if selected_role != st.session_state.user_role:
         st.session_state.user_role = selected_role
-        # The session manager will handle the audit logging for role changes.
         st.rerun()
 
     st.sidebar.markdown("---")
@@ -117,16 +123,21 @@ def page_setup(page_title: str, page_icon: str):
         page_title (str): The title for the browser tab.
         page_icon (str): The icon for the browser tab.
     """
-    st.set_page_config(
-        page_title=f"{page_title} - VERITAS",
-        page_icon=page_icon,
-        layout="wide",
-        initial_sidebar_state="expanded",
-        menu_items={
-            'Get Help': settings.APP.help_url,
-            'About': f"VERITAS, Version {settings.APP.version}"
-        }
-    )
+    # This check is crucial for multipage apps. `st.set_page_config` can only be called once.
+    # The state variable ensures it's only called on the first run of the script.
+    if 'page_config_set' not in st.session_state or st.session_state.page_config_set != page_title:
+        st.set_page_config(
+            page_title=f"{page_title} - VERITAS",
+            page_icon=page_icon,
+            layout="wide",
+            initial_sidebar_state="expanded",
+            menu_items={
+                'Get Help': settings.APP.help_url,
+                'About': f"VERITAS, Version {settings.APP.version}"
+            }
+        )
+        st.session_state.page_config_set = page_title
+
     initialize_session_state()
-    _check_page_authorization()
-    render_sidebar()
+    render_sidebar() # Render sidebar first
+    _check_page_authorization() # Then check authorization
