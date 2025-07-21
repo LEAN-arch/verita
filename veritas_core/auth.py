@@ -35,24 +35,27 @@ def _check_page_authorization():
     # The robust, modern, and documented method is to use st.get_page_script_hash()
     # to identify the current page being executed.
     try:
+        # Get the hash of the currently running page script
         current_page_hash = st.get_page_script_hash()
-        pages = st.get_pages("VERITAS_Home.py") # Get all pages relative to the main app file
+        # Get the dictionary of all pages in the app
+        pages = st.get_pages("VERITAS_Home.py")
         
-        # Find the script path from the hash
+        # Find the script path that corresponds to the current hash
         current_page_script_path = ""
         for page_details in pages.values():
             if page_details["page_script_hash"] == current_page_hash:
                 current_page_script_path = page_details["page_script_path"]
                 break
         
-        # If the hash isn't found, it's the main page.
+        # If the hash isn't found, it means we are on the main page.
         if not current_page_script_path:
              current_page_script_path = "VERITAS_Home.py"
              
+        # Extract the simple filename for the permissions dictionary
         current_page_script_name = os.path.basename(current_page_script_path)
             
     except Exception as e:
-        # Failsafe in case the API has issues. Default to the home page.
+        # Failsafe in case the API has issues or changes. Default to the home page.
         st.warning(f"Could not determine current page for authorization check: {e}")
         current_page_script_name = "VERITAS_Home.py"
 
@@ -117,6 +120,8 @@ def page_setup(page_title: str, page_icon: str):
     A single, consolidated function to be called at the top of every UI page.
     It handles page configuration, session initialization, and authorization checks.
     """
+    # This check is crucial for multipage apps. `st.set_page_config` can only be called once per script run.
+    # The state variable ensures it's only called on the first execution.
     if 'page_config_set' not in st.session_state or st.session_state.page_config_set != page_title:
         st.set_page_config(
             page_title=f"{page_title} - VERITAS",
