@@ -2,7 +2,7 @@
 # Page 6: Governance & Audit Hub (Ultimate Version)
 #
 # Author: Principal Engineer SME
-# Last Updated: 2023-10-29 (Ultimate Version)
+# Last Updated: 2023-10-29 (Definitively Corrected Version)
 #
 # Description:
 # This module is the central command center for all GxP compliance, data
@@ -24,7 +24,10 @@ import pandas as pd
 from datetime import datetime
 
 # Import the core backend components.
-from veritas_core import session, auth, plotting
+# --- IMPORT ERROR FIX ---
+# Corrected the import path for the plotting module.
+from veritas_core import session, auth
+from veritas_core.engine import plotting
 
 # --- 1. PAGE SETUP AND AUTHENTICATION ---
 session_manager = session.SessionManager()
