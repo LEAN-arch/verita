@@ -2,18 +2,13 @@
 # Core Module: Application Settings & Configuration
 #
 # Author: Principal Engineer SME
-# Last Updated: 2023-10-29 (Ultimate Version)
+# Last Updated: 2023-10-29 (Definitively Corrected Version)
 #
 # Description:
 # This module uses Pydantic to define a robust, type-safe, and self-documenting
 # configuration for the entire VERITAS application. This is a best practice for
 # building maintainable, enterprise-grade software. It centralizes all business
 # rules, specifications, and UI constants.
-#
-# Key Advantage:
-# Pydantic models validate the configuration on startup, catching errors early
-# and ensuring that all parts of the application receive settings in the
-# expected format.
 # ==============================================================================
 
 from pydantic import BaseModel, Field
@@ -38,7 +33,6 @@ class AuthSettings(BaseModel):
     role_options: List[str] = ['DTE Leadership', 'Study Director', 'QC Analyst', 'Scientist']
     default_role: str = "DTE Leadership"
     default_user: str = "Demo User"
-    # Defines role-based access control (RBAC) for each page file.
     page_permissions: Dict[str, List[str]] = {
         "VERITAS_Home.py": ['DTE Leadership', 'Study Director', 'QC Analyst', 'Scientist'],
         "1_🧪_QC_Integrity_Center.py": ['Scientist', 'QC Analyst', 'DTE Leadership'],
@@ -61,7 +55,7 @@ class ProcessCapabilitySettings(BaseModel):
 
 class StabilitySpecSettings(BaseModel):
     spec_limits: Dict[str, SpecLimits]
-    poolability_alpha: float = 0.05 # Significance level for ANCOVA test
+    poolability_alpha: float = 0.05
 
 class DeviationManagementSettings(BaseModel):
     kanban_states: List[str] = ["New", "In Progress", "Pending QA", "Closed"]
@@ -92,8 +86,11 @@ class AppSettings(BaseModel):
 # --- Instantiate the Configuration Models with Concrete Values ---
 AUTH = AuthSettings()
 
-APP = AppSettings(
-    version="10.1 (Ultimate)",
+# --- ATTRIBUTE ERROR FIX ---
+# The instantiated object must be lowercase `app` to match the attribute access
+# pattern used throughout the application (e.g., `settings.app.version`).
+app = AppSettings(
+    version="10.2 (Definitively Corrected)",
     description="Vertex Ensured Reporting & Integrity Transformation Automation Suite",
     help_url="https://www.vertex.com/contact-us",
     process_capability=ProcessCapabilitySettings(
