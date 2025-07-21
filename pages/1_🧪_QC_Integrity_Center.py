@@ -8,14 +8,6 @@
 # This module serves as the primary workbench for scientists and QC analysts
 # to ensure the integrity of their data. It moves beyond simple checks to
 # become an interactive investigation tool.
-#
-# Key Upgrades:
-# - Configurable & Savable Rule Sets: Empowers users to codify their specific
-#   QC needs for different stages of research (e.g., R&D vs. GxP).
-# - Integrated Discrepancy Management: Creates a seamless workflow from
-#   identifying a data issue to formally logging it as a deviation.
-# - Multi-Variate Anomaly Explorer: A powerful 3D visualization tool for
-#   discovering complex relationships and outliers.
 # ==============================================================================
 
 import streamlit as st
@@ -23,18 +15,14 @@ import pandas as pd
 import numpy as np
 
 # Import the core backend components.
-# --- IMPORT ERROR FIX ---
-# Corrected the import path for the plotting module.
 from veritas_core import session, auth
 from veritas_core.engine import analytics, plotting
 
 # --- 1. PAGE SETUP AND AUTHENTICATION ---
-# The SessionManager handles all boilerplate setup.
 session_manager = session.SessionManager()
 session_manager.initialize_page("QC & Integrity Center", "🧪")
 
 # --- 2. DATA LOADING & FILTERING ---
-# The SessionManager provides a clean interface to access session data.
 hplc_data = session_manager.get_data('hplc')
 
 st.sidebar.subheader("Data Selection", divider='blue')
@@ -51,7 +39,6 @@ st.markdown("---")
 # --- 4. UI TABS FOR DIFFERENT QC WORKFLOWS ---
 tab1, tab2, tab3 = st.tabs(["📋 **Rule-Based QC Engine**", "📊 **Statistical Deep Dive**", "🤖 **ML Anomaly Detection**"])
 
-# --- TAB 1: RULE-BASED QC ENGINE ---
 with tab1:
     st.header("Automated Rule-Based Quality Control")
     st.info("""
@@ -62,25 +49,23 @@ with tab1:
     with col1:
         st.subheader("1. Configure QC Rules", anchor=False)
         with st.form("qc_rules_form"):
-            # This demonstrates a more advanced feature allowing users to codify their needs.
             st.write("**Select Checks to Perform:**")
             rules_config = {
                 'check_nulls': st.checkbox("Check for critical missing values", value=True),
                 'check_negatives': st.checkbox("Check for impossible negative values", value=True),
                 'check_spec_limits': st.checkbox("Check against CQA specifications", value=True),
             }
-            # The form ensures all inputs are gathered before execution.
             submitted = st.form_submit_button("▶️ Execute QC Analysis", type="primary")
 
     if submitted:
         with st.spinner("Running QC checks..."):
-            # Call the backend analytics engine. The UI layer doesn't know *how* this is done, only that it gets a result.
+            # --- ATTRIBUTE ERROR FIX ---
+            # Changed settings.APP to settings.app
             discrepancy_report = analytics.apply_qc_rules(
                 df=selected_df,
                 rules_config=rules_config,
-                app_config=session_manager.settings.APP
+                app_config=session_manager.settings.app
             )
-            # Store the result in the session for use below.
             session_manager.update_page_state('qc_report', discrepancy_report)
 
     with col2:
@@ -95,7 +80,6 @@ with tab1:
                 st.error(f"Found **{len(report_df)}** issues requiring attention.")
                 st.dataframe(report_df, use_container_width=True, hide_index=True)
                 
-                # --- New "Actionability" Feature ---
                 st.subheader("3. Take Action", anchor=False)
                 if st.button("Create Deviation Ticket from Results", type="secondary"):
                     new_dev_id = session_manager.create_deviation_from_qc(report_df, study_id)
@@ -104,7 +88,6 @@ with tab1:
             else:
                 st.success("✅ Congratulations! No rule-based discrepancies were found in this dataset.")
 
-# --- TAB 2: STATISTICAL DEEP DIVE ---
 with tab2:
     st.header("Statistical Deep Dive")
     st.info("""
@@ -124,7 +107,6 @@ with tab2:
             - A **p-value > 0.05** (green) suggests the data is likely normal.
             - A **p-value <= 0.05** (orange) suggests the data is non-normal, which could indicate process instability or measurement errors.
             """)
-        # Call backend analysis engine
         normality_results = analytics.perform_normality_test(data_to_test)
         if normality_results['p_value'] is not None:
             st.metric("P-value", f"{normality_results['p_value']:.4f}")
@@ -141,7 +123,6 @@ with tab2:
         
     st.plotly_chart(plotting.plot_qq(data_to_test), use_container_width=True)
 
-# --- TAB 3: ML ANOMALY DETECTION ---
 with tab3:
     st.header("Machine Learning-Powered Anomaly Detection")
     st.info("""
@@ -165,7 +146,6 @@ with tab3:
             ml_submitted = st.form_submit_button("🤖 Find Anomalies", type="primary")
 
         if ml_submitted:
-            # Call backend ML engine
             predictions, data_fitted = analytics.run_anomaly_detection(selected_df, [x_col, y_col, z_col], contamination)
             session_manager.update_page_state('ml_results', {
                 'preds': predictions, 'data': data_fitted, 'cols': [x_col, y_col, z_col]
@@ -173,7 +153,6 @@ with tab3:
 
         ml_results = session_manager.get_page_state('ml_results')
         if ml_results and ml_results['preds'] is not None:
-            # Call the new 3D plotter
             st.plotly_chart(
                 plotting.plot_ml_anomaly_results_3d(
                     df=ml_results['data'],
