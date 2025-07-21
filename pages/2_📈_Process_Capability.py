@@ -2,7 +2,7 @@
 # Page 2: Process Capability Dashboard (Ultimate Version)
 #
 # Author: Principal Engineer SME
-# Last Updated: 2023-10-29 (Ultimate Version)
+# Last Updated: 2023-10-29 (Definitively Corrected Version)
 #
 # Description:
 # This module is an intelligent suite for Statistical Process Control (SPC) and
@@ -22,8 +22,10 @@ import pandas as pd
 from datetime import timedelta
 
 # Import the core backend components.
-from veritas_core import session, auth, plotting
-from veritas_core.engine import analytics
+# --- IMPORT ERROR FIX ---
+# Corrected the import path for the plotting module.
+from veritas_core import session, auth
+from veritas_core.engine import analytics, plotting
 
 # --- 1. PAGE SETUP AND AUTHENTICATION ---
 session_manager = session.SessionManager()
