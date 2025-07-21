@@ -22,8 +22,6 @@ from typing import Dict, Any, List
 
 # Import other core components using relative imports
 from . import settings, repository, auth
-# --- IMPORT ERROR FIX ---
-# The import path must reflect the `engine` sub-package structure.
 from .engine import analytics, plotting, reporting
 
 class SessionManager:
@@ -62,16 +60,18 @@ class SessionManager:
     # --- Page Initialization & Setup ---
     def initialize_app(self, page_title: str, page_icon: str):
         """Main initializer for the home page."""
+        # --- ATTRIBUTE ERROR FIX ---
+        # Changed self.settings.APP to self.settings.app to match the corrected settings file.
         st.set_page_config(
             page_title=f"{page_title} - VERITAS", page_icon=page_icon, layout="wide",
             initial_sidebar_state="expanded",
             menu_items={
-                'Get Help': self.settings.APP.help_url,
-                'About': f"VERITAS, Version {self.settings.APP.version}"
+                'Get Help': self.settings.app.help_url,
+                'About': f"VERITAS, Version {self.settings.app.version}"
             }
         )
         auth.initialize_session_state()
-        self._audit_login() # Audit login after session is confirmed initialized
+        self._audit_login()
         auth.render_sidebar()
 
     def initialize_page(self, page_title: str, page_icon: str):
@@ -83,7 +83,7 @@ class SessionManager:
         """Safely retrieves a dataframe from the session state."""
         full_key = f"{data_key}_data"
         if full_key not in st.session_state:
-            self._initialize_backend() # Failsafe reload if state is lost
+            self._initialize_backend()
         return st.session_state.get(full_key, pd.DataFrame())
 
     # --- State Management for Individual Pages ---
@@ -133,8 +133,10 @@ class SessionManager:
         return new_dev_id
     
     def advance_deviation_status(self, dev_id: str, current_status: str):
-        current_index = self.settings.APP.deviation_management.kanban_states.index(current_status)
-        new_status = self.settings.APP.deviation_management.kanban_states[current_index + 1]
+        # --- ATTRIBUTE ERROR FIX ---
+        # Changed settings.APP to settings.app
+        current_index = self.settings.app.deviation_management.kanban_states.index(current_status)
+        new_status = self.settings.app.deviation_management.kanban_states[current_index + 1]
         self.repo.update_deviation_status(dev_id, new_status)
         st.session_state.deviations_data = self.repo.get_deviations_data()
         self.repo.write_audit_log(
@@ -157,12 +159,16 @@ class SessionManager:
         cqa = report_data.get('cqa', 'Purity')
         report_data['cqa'] = cqa
         
+        # --- ATTRIBUTE ERROR FIX ---
+        # Changed settings.APP to settings.app
+        spec_limits = self.settings.app.process_capability.spec_limits[cqa]
+        cpk_target = self.settings.app.process_capability.cpk_target
+        
         report_data['plot_fig'] = plotting.plot_process_capability(
             report_data['report_df'], cqa, 
-            self.settings.APP.process_capability.spec_limits[cqa].lsl,
-            self.settings.APP.process_capability.spec_limits[cqa].usl,
-            analytics.calculate_cpk(report_data['report_df'][cqa], self.settings.APP.process_capability.spec_limits[cqa].lsl, self.settings.APP.process_capability.spec_limits[cqa].usl),
-            self.settings.APP.process_capability.cpk_target
+            spec_limits.lsl, spec_limits.usl,
+            analytics.calculate_cpk(report_data['report_df'][cqa], spec_limits.lsl, spec_limits.usl),
+            cpk_target
         )
 
         if report_data['report_format'] == 'PDF':
@@ -197,8 +203,6 @@ class SessionManager:
         }
         
         draft_report['report_data']['signature_details'] = signature_details
-
-        # Use the finalized data to generate the PDF with the signature block
         final_bytes_with_sig = reporting.generate_pdf_report(draft_report['report_data'])
 
         self.repo.write_audit_log(
@@ -216,13 +220,14 @@ class SessionManager:
         }
     
     def get_kpi(self, kpi_name: str) -> Dict:
-        # This would contain the business logic for calculating KPIs
         if kpi_name == 'active_deviations':
             df = self.get_data('deviations')
             return {'value': len(df[df['status'] != 'Closed']), 'sme_info': "Total open quality events."}
         if kpi_name == 'data_quality_score':
             df = self.get_data('hplc')
-            lsl = self.settings.APP.process_capability.spec_limits['Purity'].lsl
+            # --- ATTRIBUTE ERROR FIX ---
+            # Changed settings.APP to settings.app
+            lsl = self.settings.app.process_capability.spec_limits['Purity'].lsl
             score = 100 * (df['Purity'] >= lsl).mean()
             return {'value': score, 'delta': (score-95), 'sme_info': "Percentage of results passing automated integrity checks."}
         if kpi_name == 'first_pass_yield':
