@@ -1,20 +1,14 @@
 import streamlit as st
 import pandas as pd
 from datetime import timedelta
-from veritas_core import session, auth
+from veritas_core import bootstrap, session
 from veritas_core.engine import analytics, plotting
 
-# --- 1. PAGE CONFIGURATION ---
-st.set_page_config(
-    page_title="Process Capability",
-    page_icon="📈",
-    layout="wide"
-)
+# --- 1. APPLICATION BOOTSTRAP ---
+bootstrap.run("Process Capability", "📈")
 
-# --- 2. APPLICATION INITIALIZATION & AUTH ---
-session.initialize_session()
+# --- 2. SESSION MANAGER ACCESS ---
 session_manager = session.SessionManager()
-auth.render_page()
 
 # --- 3. DATA LOADING & FILTERING ---
 hplc_data = session_manager.get_data('hplc')
@@ -40,12 +34,11 @@ if instrument_filter != 'All':
 
 st.sidebar.success(f"**{len(filtered_df)}** data points selected for analysis.")
 
-# --- 4. PAGE HEADER ---
+# --- 4. PAGE CONTENT ---
 st.title("📈 Process Capability Dashboard")
 st.markdown("Analyze historical process stability, quantify capability, and perform root cause analysis on process variation.")
 st.markdown("---")
 
-# --- 5. UI TABS FOR DIFFERENT ANALYSIS TYPES ---
 tab1, tab2 = st.tabs(["📊 **Capability & Control Charts**", "🔬 **Root Cause Analysis (ANOVA)**"])
 
 with tab1:
@@ -121,4 +114,4 @@ with tab2:
                 pairs_text = [f"**{row.group1}** vs **{row.group2}**" for index, row in significant_pairs.iterrows()]
                 st.error(f"**Actionable Insight:** {conclusion}" + ", ".join(pairs_text) + ".", icon="🎯")
 
-auth.display_compliance_footer()
+session_manager.settings.app.audit_trail.action_icons['User Login'] # Placeholder
