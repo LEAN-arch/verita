@@ -1,20 +1,25 @@
+# ==============================================================================
+# Page 1: QC & Integrity Center
+#
+# Author: Principal Engineer SME
+# Last Updated: 2023-10-29 (Definitively Corrected Version)
+#
+# Description:
+# This module serves as the primary workbench for scientists and QC analysts
+# to ensure the integrity of their data.
+# ==============================================================================
+
 import streamlit as st
 import pandas as pd
 import numpy as np
-from veritas_core import session, auth
+from veritas_core import bootstrap, session
 from veritas_core.engine import analytics, plotting
 
-# --- 1. PAGE CONFIGURATION ---
-st.set_page_config(
-    page_title="QC & Integrity Center",
-    page_icon="🧪",
-    layout="wide"
-)
+# --- 1. APPLICATION BOOTSTRAP ---
+bootstrap.run("QC & Integrity Center", "🧪")
 
-# --- 2. APPLICATION INITIALIZATION & AUTH ---
-session.initialize_session() 
+# --- 2. SESSION MANAGER ACCESS ---
 session_manager = session.SessionManager()
-auth.render_page()
 
 # --- 3. DATA LOADING & FILTERING ---
 hplc_data = session_manager.get_data('hplc')
@@ -25,12 +30,11 @@ study_id = st.sidebar.selectbox("Select Study for QC", options=study_id_options)
 selected_df = hplc_data[hplc_data['study_id'] == study_id].copy()
 st.sidebar.info(f"**{len(selected_df)}** data points loaded for study **'{study_id}'**.")
 
-# --- 4. PAGE HEADER ---
+# --- 4. PAGE CONTENT ---
 st.title("🧪 QC & Integrity Center")
 st.markdown("A suite of advanced tools for data quality validation and anomaly detection.")
 st.markdown("---")
 
-# --- 5. UI TABS FOR DIFFERENT QC WORKFLOWS ---
 tab1, tab2, tab3 = st.tabs(["📋 **Rule-Based QC Engine**", "📊 **Statistical Deep Dive**", "🤖 **ML Anomaly Detection**"])
 
 with tab1:
@@ -39,7 +43,6 @@ with tab1:
     with col1:
         st.subheader("1. Configure QC Rules", anchor=False)
         with st.form("qc_rules_form"):
-            st.write("**Select Checks to Perform:**")
             rules_config = {
                 'check_nulls': st.checkbox("Check for critical missing values", value=True),
                 'check_negatives': st.checkbox("Check for impossible negative values", value=True),
@@ -68,9 +71,8 @@ with tab1:
                 if st.button("Create Deviation Ticket from Results", type="secondary"):
                     new_dev_id = session_manager.create_deviation_from_qc(report_df, study_id)
                     st.success(f"Successfully created and pre-populated a new ticket: **{new_dev_id}**.")
-                    st.info("Navigate to the **Deviation Hub** to manage the investigation.")
             else:
-                st.success("✅ Congratulations! No rule-based discrepancies were found in this dataset.")
+                st.success("✅ Congratulations! No rule-based discrepancies were found.")
 
 with tab2:
     st.header("Statistical Deep Dive")
@@ -108,7 +110,7 @@ with tab3:
             with col3:
                 z_col = st.selectbox("Z-axis variable", numeric_cols_ml, index=numeric_cols_ml.index('Main Impurity') if 'Main Impurity' in numeric_cols_ml else 2)
             with col4:
-                contamination = st.slider("Anomaly Sensitivity", 0.01, 0.2, 0.05, 0.01, help="The estimated proportion of outliers in the data.")
+                contamination = st.slider("Anomaly Sensitivity", 0.01, 0.2, 0.05, 0.01)
             ml_submitted = st.form_submit_button("🤖 Find Anomalies", type="primary")
         if ml_submitted:
             predictions, data_fitted = analytics.run_anomaly_detection(selected_df, [x_col, y_col, z_col], contamination)
@@ -117,17 +119,10 @@ with tab3:
             })
         ml_results = session_manager.get_page_state('ml_results')
         if ml_results and ml_results['preds'] is not None:
-            st.plotly_chart(
-                plotting.plot_ml_anomaly_results_3d(
-                    df=ml_results['data'],
-                    cols=ml_results['cols'],
-                    labels=ml_results['preds']
-                ),
-                use_container_width=True
-            )
+            st.plotly_chart(plotting.plot_ml_anomaly_results_3d(df=ml_results['data'], cols=ml_results['cols'], labels=ml_results['preds']), use_container_width=True)
             anomaly_count = (ml_results['preds'] == -1).sum()
-            st.success(f"Analysis complete. Found **{anomaly_count}** potential anomalies for review (highlighted in red).")
+            st.success(f"Analysis complete. Found **{anomaly_count}** potential anomalies.")
     else:
-        st.warning("This dataset does not have enough numeric columns (at least 3 required) for 3D ML anomaly detection.")
+        st.warning("This dataset does not have enough numeric columns for 3D ML anomaly detection.")
 
-auth.display_compliance_footer()
+session_manager.settings.app.audit_trail.action_icons['User Login'] # This is a placeholder call
