@@ -86,7 +86,6 @@ class AppSettings(BaseModel):
 # --- Instantiate the Configuration Models with Concrete Values ---
 AUTH = AuthSettings()
 
-# --- ATTRIBUTE ERROR FIX ---
 # The instantiated object must be lowercase `app` to match the attribute access
 # pattern used throughout the application (e.g., `settings.app.version`).
 app = AppSettings(
@@ -106,10 +105,6 @@ app = AppSettings(
             "Purity (%)": SpecLimits(USL=None, LSL=98.0),
             "Main Impurity (%)": SpecLimits(USL=0.5, LSL=None)
         }
-    ),
-    deviation_management=DeviationManagementSettings(),
-    audit_trail=AuditTrailSettings()
-)
     ),
     deviation_management=DeviationManagementSettings(),
     audit_trail=AuditTrailSettings()
