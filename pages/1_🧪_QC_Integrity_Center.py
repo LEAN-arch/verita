@@ -2,7 +2,7 @@
 # Page 1: QC & Integrity Center
 #
 # Author: Principal Engineer SME
-# Last Updated: 2023-10-29 (Ultimate Version)
+# Last Updated: 2023-10-29 (Definitively Corrected Version)
 #
 # Description:
 # This module serves as the primary workbench for scientists and QC analysts
@@ -23,8 +23,10 @@ import pandas as pd
 import numpy as np
 
 # Import the core backend components.
-from veritas_core import session, auth, plotting
-from veritas_core.engine import analytics
+# --- IMPORT ERROR FIX ---
+# Corrected the import path for the plotting module.
+from veritas_core import session, auth
+from veritas_core.engine import analytics, plotting
 
 # --- 1. PAGE SETUP AND AUTHENTICATION ---
 # The SessionManager handles all boilerplate setup.
@@ -76,7 +78,7 @@ with tab1:
             discrepancy_report = analytics.apply_qc_rules(
                 df=selected_df,
                 rules_config=rules_config,
-                app_config=session_manager.settings.app
+                app_config=session_manager.settings.APP
             )
             # Store the result in the session for use below.
             session_manager.update_page_state('qc_report', discrepancy_report)
