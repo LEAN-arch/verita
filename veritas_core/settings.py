@@ -90,7 +90,7 @@ AUTH = AuthSettings()
 # The instantiated object must be lowercase `app` to match the attribute access
 # pattern used throughout the application (e.g., `settings.app.version`).
 app = AppSettings(
-    version="10.2 (Definitively Corrected)",
+    version="10.3 (Definitively Corrected)",
     description="Vertex Ensured Reporting & Integrity Transformation Automation Suite",
     help_url="https://www.vertex.com/contact-us",
     process_capability=ProcessCapabilitySettings(
@@ -106,6 +106,10 @@ app = AppSettings(
             "Purity (%)": SpecLimits(USL=None, LSL=98.0),
             "Main Impurity (%)": SpecLimits(USL=0.5, LSL=None)
         }
+    ),
+    deviation_management=DeviationManagementSettings(),
+    audit_trail=AuditTrailSettings()
+)
     ),
     deviation_management=DeviationManagementSettings(),
     audit_trail=AuditTrailSettings()
