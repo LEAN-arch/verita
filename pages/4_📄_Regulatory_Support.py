@@ -1,51 +1,35 @@
-# ==============================================================================
-# Page 4: Regulatory Support & Report Assembler (Ultimate Version)
-#
-# Author: Principal Engineer SME
-# Last Updated: 2023-10-29 (Definitively Corrected Version)
-#
-# Description:
-# This module is the definitive engine for compiling and generating formatted,
-# submission-ready data packages. It is designed to be defensible during a
-# regulatory inspection.
-# ==============================================================================
-
 import streamlit as st
 import pandas as pd
-
-# Import the core backend components.
 from veritas_core import session, auth
 from veritas_core.engine import analytics, plotting, reporting
 
-# --- 1. PAGE SETUP AND AUTHENTICATION ---
-session_manager = session.SessionManager()
-session_manager.initialize_page("Regulatory Support", "📄")
+# --- 1. PAGE CONFIGURATION ---
+st.set_page_config(
+    page_title="Regulatory Support",
+    page_icon="📄",
+    layout="wide"
+)
 
-# --- 2. DATA LOADING & CONFIG ---
+# --- 2. APPLICATION INITIALIZATION & AUTH ---
+session.initialize_session()
+session_manager = session.SessionManager()
+auth.render_page()
+
+# --- 3. DATA LOADING & CONFIG ---
 hplc_data = session_manager.get_data('hplc')
-# --- ATTRIBUTE ERROR FIX ---
-# Changed settings.APP to settings.app
 cpk_config = session_manager.settings.app.process_capability
 
-# --- 3. PAGE HEADER ---
+# --- 4. PAGE HEADER ---
 st.title("📄 Regulatory Support & Report Assembler")
 st.markdown("Compile data summaries and generate formatted, e-signed reports for submissions.")
 st.markdown("---")
 
-# --- 4. REPORT CONFIGURATION UI ---
+# --- 5. REPORT CONFIGURATION UI ---
 st.header("1. Configure Report Content")
 col1, col2 = st.columns(2)
 with col1:
-    study_id = st.selectbox(
-        "Select a Study:",
-        options=sorted(hplc_data['study_id'].unique())
-    )
-    report_format = st.radio(
-        "Select Report Format:",
-        options=['PDF', 'PowerPoint'],
-        horizontal=True
-    )
-    
+    study_id = st.selectbox("Select a Study:", options=sorted(hplc_data['study_id'].unique()))
+    report_format = st.radio("Select Report Format:", options=['PDF', 'PowerPoint'], horizontal=True)
 with col2:
     st.write("**Select sections to include in the report:**")
     sections_config = {
@@ -62,31 +46,25 @@ st.markdown("---")
 
 st.header("2. Add Commentary & Generate")
 cqa = st.selectbox("Select Primary CQA for Report Analysis:", options=cpk_config.available_cqas)
-
 commentary = st.text_area(
-    "Enter Analyst Commentary (will be included in the report):",
-    f"This report summarizes the data for study {study_id}. All analyses were performed using the validated VERITAS system on {pd.Timestamp.now().strftime('%Y-%m-%d')}. The primary CQA, {cqa}, remained well within the established specification limits.",
+    "Enter Analyst Commentary:",
+    f"This report summarizes the data for study {study_id}. The primary CQA, {cqa}, remained well within the established specification limits.",
     height=100
 )
 
 if st.button(f"Generate DRAFT {report_format} Report", type="primary"):
     with st.spinner(f"Assembling DRAFT {report_format} report..."):
         session_manager.generate_draft_report(
-            study_id=study_id,
-            report_df=report_df,
-            cqa=cqa,
-            sections_config=sections_config,
-            commentary=commentary,
-            report_format=report_format
+            study_id=study_id, report_df=report_df, cqa=cqa,
+            sections_config=sections_config, commentary=commentary, report_format=report_format
         )
     st.success(f"DRAFT {report_format} report generated successfully. Proceed to sign and lock.")
 
-# --- 5. E-SIGNATURE AND DOWNLOAD WORKFLOW ---
+# --- 6. E-SIGNATURE AND DOWNLOAD WORKFLOW ---
 draft_report = session_manager.get_page_state('draft_report')
 if draft_report:
     st.markdown("---")
     st.header("3. Sign & Lock Report")
-    
     st.info(f"**Report Ready for Signature:** `{draft_report['filename']}`")
     st.download_button(
         label="Download DRAFT Watermarked Version for Review",
@@ -94,20 +72,14 @@ if draft_report:
         file_name=f"DRAFT_{draft_report['filename']}",
         mime=draft_report['mime']
     )
-    
-    st.warning("⚠️ **Action Required:** This report is a **DRAFT** and is not valid for submission until it is electronically signed. Signing will permanently lock this version.")
-
+    st.warning("⚠️ **Action Required:** This report is a **DRAFT** and is not valid for submission until it is electronically signed.")
     with st.form("e_signature_form"):
         st.subheader("21 CFR Part 11 Electronic Signature", anchor=False)
         username_input = st.text_input("Username", value=st.session_state.username, disabled=True)
-        password_input = st.text_input("Password", type="password", help="Enter your system password.")
-        auth_code_input = st.text_input("2FA Authentication Code", help="Enter the 6-digit code from your authenticator app.")
-        signing_reason = st.selectbox(
-            "Reason for Signing:",
-            options=["Author Approval", "Technical Review", "QA Final Approval"]
-        )
+        password_input = st.text_input("Password", type="password")
+        auth_code_input = st.text_input("2FA Authentication Code")
+        signing_reason = st.selectbox("Reason for Signing:", options=["Author Approval", "Technical Review", "QA Final Approval"])
         submitted = st.form_submit_button("Sign and Lock Report")
-        
         if submitted:
             if password_input == "vertex123" and auth_code_input.isdigit() and len(auth_code_input) == 6:
                 with st.spinner("Applying secure signature and finalizing report..."):
@@ -128,5 +100,5 @@ if final_report:
         type="primary"
     )
 
-# --- 6. COMPLIANCE FOOTER ---
+# --- 7. COMPLIANCE FOOTER ---
 auth.display_compliance_footer()
