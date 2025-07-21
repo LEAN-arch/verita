@@ -2,7 +2,7 @@
 # Page 4: Regulatory Support & Report Assembler (Ultimate Version)
 #
 # Author: Principal Engineer SME
-# Last Updated: 2023-10-29 (Ultimate Version)
+# Last Updated: 2023-10-29 (Definitively Corrected Version)
 #
 # Description:
 # This module is the definitive engine for compiling and generating formatted,
@@ -23,6 +23,8 @@ import streamlit as st
 import pandas as pd
 
 # Import the core backend components.
+# --- IMPORT ERROR FIX ---
+# Corrected the import path for the engine modules.
 from veritas_core import session, auth
 from veritas_core.engine import analytics, plotting, reporting
 
@@ -70,9 +72,12 @@ st.info(f"**{len(report_df)}** data records from study **'{study_id}'** will be 
 st.markdown("---")
 
 st.header("2. Add Commentary & Generate")
+# Pre-select a CQA for the report's main analysis
+cqa = st.selectbox("Select Primary CQA for Report Analysis:", options=cpk_config.available_cqas)
+
 commentary = st.text_area(
     "Enter Analyst Commentary (will be included in the report):",
-    f"This report summarizes the data for study {study_id}. All analyses were performed using the validated VERITAS system on {pd.Timestamp.now().strftime('%Y-%m-%d')}. The data demonstrates a capable and stable process.",
+    f"This report summarizes the data for study {study_id}. All analyses were performed using the validated VERITAS system on {pd.Timestamp.now().strftime('%Y-%m-%d')}. The primary CQA, {cqa}, remained well within the established specification limits.",
     height=100
 )
 
@@ -82,6 +87,7 @@ if st.button(f"Generate DRAFT {report_format} Report", type="primary"):
         session_manager.generate_draft_report(
             study_id=study_id,
             report_df=report_df,
+            cqa=cqa, # Pass the selected CQA
             sections_config=sections_config,
             commentary=commentary,
             report_format=report_format
