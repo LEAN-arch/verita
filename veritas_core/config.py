@@ -62,3 +62,4 @@ try:
 except Exception as e:
     logger.error(f"Failed to create AppConfig instance: {str(e)}")
     raise RuntimeError(f"AppConfig creation failed: {str(e)}")
+
