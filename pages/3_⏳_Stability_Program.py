@@ -7,25 +7,12 @@
 # Description:
 # This module provides a comprehensive suite for analyzing drug stability data,
 # directly supporting shelf-life determination and regulatory filings.
-#
-# Key Upgrades:
-# - Multi-Lot Data Pooling (ICH Q1E): The application automatically performs an
-#   ANCOVA-based statistical test to determine if data from multiple lots can be
-#   pooled, providing a more robust and regulatorily defensible analysis.
-# - Interactive Confidence Intervals: Trend plots now visualize the 95%
-#   confidence interval of the regression, clearly communicating prediction
-#   uncertainty.
-# - Enhanced SME Explanations: The UI is embedded with expert commentary on
-#   the principles of stability analysis, making it a valuable tool for a wider
-#   scientific audience.
 # ==============================================================================
 
 import streamlit as st
 import pandas as pd
 
 # Import the core backend components.
-# --- IMPORT ERROR FIX ---
-# Corrected the import path for the plotting module.
 from veritas_core import session, auth
 from veritas_core.engine import analytics, plotting
 
@@ -35,6 +22,8 @@ session_manager.initialize_page("Stability Dashboard", "⏳")
 
 # --- 2. DATA LOADING & FILTERING ---
 stability_data = session_manager.get_data('stability')
+# --- ATTRIBUTE ERROR FIX ---
+# Changed settings.APP to settings.app
 stability_config = session_manager.settings.app.stability_specs
 
 st.sidebar.subheader("Select Stability Study", divider='blue')
@@ -42,7 +31,6 @@ st.sidebar.subheader("Select Stability Study", divider='blue')
 product_options = sorted(stability_data['product_id'].unique())
 product_filter = st.sidebar.selectbox("Select Product:", options=product_options)
 
-# --- New Ultimate Feature: Multi-Lot Selection ---
 lot_options = sorted(stability_data[stability_data['product_id'] == product_filter]['lot_id'].unique())
 lot_filter = st.sidebar.multiselect(
     "Select Lot(s):",
@@ -55,7 +43,6 @@ if not lot_filter:
     st.warning("Please select at least one lot to begin analysis.")
     st.stop()
 
-# Apply Filters
 filtered_df = stability_data[(stability_data['product_id'] == product_filter) & (stability_data['lot_id'].isin(lot_filter))]
 
 # --- 3. PAGE HEADER ---
@@ -73,7 +60,6 @@ st.markdown("---")
 poolability_results = {}
 if len(lot_filter) > 1:
     st.header("Multi-Lot Poolability Assessment (ANCOVA)")
-    # We will test poolability for each available assay
     assays_to_test = list(stability_config.spec_limits.keys())
     
     with st.spinner("Performing ANCOVA tests for lot poolability..."):
@@ -106,48 +92,31 @@ st.header(f"Stability Profile for {product_filter} - Lot(s): {', '.join(lot_filt
 if not filtered_df.empty:
     col1, col2 = st.columns(2)
 
-    # --- Purity Analysis ---
     with col1:
         assay_purity = 'Purity (%)'
         if assay_purity in stability_config.spec_limits:
             use_pooled_purity = poolability_results.get(assay_purity, {}).get('poolable', False)
             title = f"Purity (%) Trend {'(Pooled Data)' if use_pooled_purity else ''}"
-            
             projection = analytics.calculate_stability_projection(filtered_df, assay_purity, use_pooled_purity)
-            
             st.plotly_chart(
                 plotting.plot_stability_trend(filtered_df, assay_purity, title, stability_config.spec_limits[assay_purity], projection),
                 use_container_width=True
             )
-            
             if projection and 'slope' in projection:
-                # In a real app, shelf life projection would be more complex, but this demonstrates the principle.
-                st.metric(
-                    "Trend Slope",
-                    f"{projection['slope']:.3f} / month",
-                    help="Linear regression slope of the stability trend."
-                )
+                st.metric("Trend Slope", f"{projection['slope']:.3f} / month", help="Linear regression slope of the stability trend.")
 
-    # --- Impurity Analysis ---
     with col2:
         assay_impurity = 'Main Impurity (%)'
         if assay_impurity in stability_config.spec_limits:
             use_pooled_impurity = poolability_results.get(assay_impurity, {}).get('poolable', False)
             title = f"Main Impurity (%) Trend {'(Pooled Data)' if use_pooled_impurity else ''}"
-            
             projection = analytics.calculate_stability_projection(filtered_df, assay_impurity, use_pooled_impurity)
-
             st.plotly_chart(
                 plotting.plot_stability_trend(filtered_df, assay_impurity, title, stability_config.spec_limits[assay_impurity], projection),
                 use_container_width=True
             )
-            
             if projection and 'slope' in projection:
-                 st.metric(
-                    "Trend Slope",
-                    f"+{projection['slope']:.3f} / month",
-                    help="Linear regression slope of the stability trend."
-                )
+                 st.metric("Trend Slope", f"+{projection['slope']:.3f} / month", help="Linear regression slope of the stability trend.")
 
     st.subheader("Raw Stability Data", anchor=False)
     st.dataframe(filtered_df, use_container_width=True, hide_index=True)
