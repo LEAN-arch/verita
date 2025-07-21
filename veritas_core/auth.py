@@ -21,7 +21,7 @@ def _check_page_authorization():
         current_page_script_name = os.path.basename(current_page_script_path)
     except Exception:
         current_page_script_name = "VERITAS_Home.py"
-        
+    
     user_role = st.session_state.get('user_role', '')
     page_permissions = settings.AUTH.page_permissions
     
@@ -43,10 +43,9 @@ def render_sidebar():
     st.sidebar.markdown("---")
     st.sidebar.info(f"Welcome, **{st.session_state.get('username', 'User')}**")
     role_options = settings.AUTH.role_options
-    try:
-        current_role_index = role_options.index(st.session_state.user_role)
-    except ValueError:
-        current_role_index = 0
+    try: current_role_index = role_options.index(st.session_state.user_role)
+    except ValueError: current_role_index = 0
+    
     selected_role = st.sidebar.selectbox(
         "Switch Role View", options=role_options, index=current_role_index,
         help="Switch roles to see how dashboards and permissions change."
@@ -68,10 +67,7 @@ def display_compliance_footer():
     </div>
     """, unsafe_allow_html=True)
 
-def render_page():
-    """
-    Consolidated function to render common elements on every page.
-    Assumes `st.set_page_config` has already been called.
-    """
-    _check_page_authorization()
+def render_common_elements():
+    """Single function to render sidebar and check auth, called by bootstrap."""
     render_sidebar()
+    _check_page_authorization()
