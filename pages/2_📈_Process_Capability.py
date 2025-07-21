@@ -1,3 +1,14 @@
+# ==============================================================================
+# Page 2: Process Capability Dashboard (Ultimate Version)
+#
+# Author: Principal Engineer SME
+# Last Updated: 2023-10-29 (Definitively Corrected Version)
+#
+# Description:
+# This module is an intelligent suite for Statistical Process Control (SPC) and
+# advanced root cause analysis, embodying the "10+ Ultimate App" philosophy.
+# ==============================================================================
+
 import streamlit as st
 import pandas as pd
 from datetime import timedelta
@@ -43,6 +54,10 @@ tab1, tab2 = st.tabs(["📊 **Capability & Control Charts**", "🔬 **Root Cause
 
 with tab1:
     st.header("Process Performance Analysis")
+    st.info("""
+    **Purpose:** To assess process performance over time. A process must be **stable** (in control) before its **capability** can be meaningfully calculated. Use the interactive tools below to monitor stability and simulate capability under different scenarios.
+    """)
+    
     col1, col2 = st.columns([1, 2])
     with col1:
         selected_cqa = st.selectbox("Select a CQA:", options=cpk_config.available_cqas)
@@ -70,6 +85,12 @@ with tab1:
 
 with tab2:
     st.header("Investigate Process Variation with ANOVA")
+    st.info("""
+    **Purpose:** To determine if there is a statistically significant difference between the means of two or more groups. This is a powerful tool to investigate if a factor like **Instrument** or **Analyst** is causing variation in your process.
+    """)
+    
+    st.subheader("1. Configure ANOVA Test", anchor=False)
+    
     col1, col2 = st.columns(2)
     with col1:
         value_col = st.selectbox("Select CQA to Analyze:", options=cpk_config.available_cqas, key="anova_value")
@@ -94,6 +115,7 @@ with tab2:
         st.markdown("---")
         st.subheader("2. ANOVA Results", anchor=False)
         p_value = anova_results['p_value']
+        
         col1, col2 = st.columns(2)
         with col1:
             st.metric("P-value", f"{p_value:.4f}")
@@ -103,15 +125,22 @@ with tab2:
                 st.success(f"**Conclusion:** No significant difference detected.", icon="✅")
         with col2:
             st.plotly_chart(plotting.plot_anova_results(filtered_df, value_col, group_col, anova_results), use_container_width=True)
+            
         tukey_results = session_manager.get_page_state('tukey_results')
         if tukey_results is not None and not tukey_results.empty:
             st.markdown("---")
             st.subheader("3. Post-Hoc Analysis (Tukey's HSD)", anchor=False)
+            st.info("""
+            **What is this?** Since the ANOVA test was significant (p <= 0.05), we run a Tukey's HSD test to determine **exactly which groups are different from each other**.
+            **How to read the table:** The `reject` column is the key. If `True`, it means there is a statistically significant difference between `group1` and `group2`.
+            """)
             st.dataframe(tukey_results, use_container_width=True, hide_index=True)
+            
             significant_pairs = tukey_results[tukey_results['reject'] == True]
             if not significant_pairs.empty:
                 conclusion = "The following pairs are significantly different: "
                 pairs_text = [f"**{row.group1}** vs **{row.group2}**" for index, row in significant_pairs.iterrows()]
                 st.error(f"**Actionable Insight:** {conclusion}" + ", ".join(pairs_text) + ".", icon="🎯")
 
-session_manager.settings.app.audit_trail.action_icons['User Login'] # Placeholder
+# --- 5. COMPLIANCE FOOTER ---
+auth.display_compliance_footer()
