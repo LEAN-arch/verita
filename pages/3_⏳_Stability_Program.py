@@ -1,29 +1,22 @@
-# ==============================================================================
-# Page 3: Stability Program Dashboard (Ultimate Version)
-#
-# Author: Principal Engineer SME
-# Last Updated: 2023-10-29 (Definitively Corrected Version)
-#
-# Description:
-# This module provides a comprehensive suite for analyzing drug stability data,
-# directly supporting shelf-life determination and regulatory filings.
-# ==============================================================================
-
 import streamlit as st
 import pandas as pd
-
-# Import the core backend components.
 from veritas_core import session, auth
 from veritas_core.engine import analytics, plotting
 
-# --- 1. PAGE SETUP AND AUTHENTICATION ---
-session_manager = session.SessionManager()
-session_manager.initialize_page("Stability Dashboard", "⏳")
+# --- 1. PAGE CONFIGURATION ---
+st.set_page_config(
+    page_title="Stability Dashboard",
+    page_icon="⏳",
+    layout="wide"
+)
 
-# --- 2. DATA LOADING & FILTERING ---
+# --- 2. APPLICATION INITIALIZATION & AUTH ---
+session.initialize_session()
+session_manager = session.SessionManager()
+auth.render_page()
+
+# --- 3. DATA LOADING & FILTERING ---
 stability_data = session_manager.get_data('stability')
-# --- ATTRIBUTE ERROR FIX ---
-# Changed settings.APP to settings.app
 stability_config = session_manager.settings.app.stability_specs
 
 st.sidebar.subheader("Select Stability Study", divider='blue')
@@ -45,18 +38,12 @@ if not lot_filter:
 
 filtered_df = stability_data[(stability_data['product_id'] == product_filter) & (stability_data['lot_id'].isin(lot_filter))]
 
-# --- 3. PAGE HEADER ---
+# --- 4. PAGE HEADER ---
 st.title("⏳ Stability Program Dashboard")
 st.markdown("Monitor stability data, project shelf-life with statistical confidence, and perform multi-lot poolability analysis for regulatory submissions.")
-with st.expander("ℹ️ SME Overview: The Role of a Stability Program (ICH Q1A & Q1E)"):
-    st.info("""
-        - **Purpose:** To provide evidence on how the quality of a drug product varies with time, which is foundational for determining storage conditions and shelf life.
-        - **Data Pooling (ICH Q1E):** When data from multiple lots are shown to be statistically similar (via ANCOVA), they can be pooled. This provides a single, more precise shelf-life estimate, which is highly desirable for regulatory filings.
-        - **How to Use:** Select a product and one or more lots. The system will automatically perform a poolability assessment and generate trend analyses.
-    """)
 st.markdown("---")
 
-# --- 4. MULTI-LOT POOLABILITY ANALYSIS ---
+# --- 5. MULTI-LOT POOLABILITY ANALYSIS ---
 poolability_results = {}
 if len(lot_filter) > 1:
     st.header("Multi-Lot Poolability Assessment (ANCOVA)")
@@ -74,7 +61,7 @@ if len(lot_filter) > 1:
             if purity_result['poolable']:
                 st.success(f"Purity data from these lots can be pooled.", icon="✅")
             else:
-                st.warning(f"Purity data from these lots should NOT be pooled. Analyze separately.", icon="⚠️")
+                st.warning(f"Purity data from these lots should NOT be pooled.", icon="⚠️")
     with col2:
         impurity_result = poolability_results.get('Main Impurity (%)', {})
         if impurity_result:
@@ -82,11 +69,11 @@ if len(lot_filter) > 1:
             if impurity_result['poolable']:
                 st.success(f"Impurity data from these lots can be pooled.", icon="✅")
             else:
-                st.warning(f"Impurity data from these lots should NOT be pooled. Analyze separately.", icon="⚠️")
+                st.warning(f"Impurity data from these lots should NOT be pooled.", icon="⚠️")
     st.markdown("---")
 
 
-# --- 5. STABILITY TREND ANALYSIS ---
+# --- 6. STABILITY TREND ANALYSIS ---
 st.header(f"Stability Profile for {product_filter} - Lot(s): {', '.join(lot_filter)}")
 
 if not filtered_df.empty:
@@ -103,8 +90,7 @@ if not filtered_df.empty:
                 use_container_width=True
             )
             if projection and 'slope' in projection:
-                st.metric("Trend Slope", f"{projection['slope']:.3f} / month", help="Linear regression slope of the stability trend.")
-
+                st.metric("Trend Slope", f"{projection['slope']:.3f} / month", help="Linear regression slope.")
     with col2:
         assay_impurity = 'Main Impurity (%)'
         if assay_impurity in stability_config.spec_limits:
@@ -116,12 +102,12 @@ if not filtered_df.empty:
                 use_container_width=True
             )
             if projection and 'slope' in projection:
-                 st.metric("Trend Slope", f"+{projection['slope']:.3f} / month", help="Linear regression slope of the stability trend.")
+                 st.metric("Trend Slope", f"+{projection['slope']:.3f} / month", help="Linear regression slope.")
 
     st.subheader("Raw Stability Data", anchor=False)
     st.dataframe(filtered_df, use_container_width=True, hide_index=True)
 else:
     st.warning("No stability data available for the selected product and lot combination.")
 
-# --- 6. COMPLIANCE FOOTER ---
+# --- 7. COMPLIANCE FOOTER ---
 auth.display_compliance_footer()
