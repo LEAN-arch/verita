@@ -1,30 +1,23 @@
 import streamlit as st
 import pandas as pd
-from veritas_core import session, auth
+from veritas_core import bootstrap, session, auth
 from veritas_core.engine import analytics, plotting, reporting
 
-# --- 1. PAGE CONFIGURATION ---
-st.set_page_config(
-    page_title="Regulatory Support",
-    page_icon="📄",
-    layout="wide"
-)
+# --- 1. APPLICATION BOOTSTRAP ---
+bootstrap.run("Regulatory Support", "📄")
 
-# --- 2. APPLICATION INITIALIZATION & AUTH ---
-session.initialize_session()
+# --- 2. SESSION MANAGER ACCESS ---
 session_manager = session.SessionManager()
-auth.render_page()
 
 # --- 3. DATA LOADING & CONFIG ---
 hplc_data = session_manager.get_data('hplc')
 cpk_config = session_manager.settings.app.process_capability
 
-# --- 4. PAGE HEADER ---
+# --- 4. PAGE CONTENT ---
 st.title("📄 Regulatory Support & Report Assembler")
 st.markdown("Compile data summaries and generate formatted, e-signed reports for submissions.")
 st.markdown("---")
 
-# --- 5. REPORT CONFIGURATION UI ---
 st.header("1. Configure Report Content")
 col1, col2 = st.columns(2)
 with col1:
@@ -60,7 +53,6 @@ if st.button(f"Generate DRAFT {report_format} Report", type="primary"):
         )
     st.success(f"DRAFT {report_format} report generated successfully. Proceed to sign and lock.")
 
-# --- 6. E-SIGNATURE AND DOWNLOAD WORKFLOW ---
 draft_report = session_manager.get_page_state('draft_report')
 if draft_report:
     st.markdown("---")
@@ -100,5 +92,4 @@ if final_report:
         type="primary"
     )
 
-# --- 7. COMPLIANCE FOOTER ---
 auth.display_compliance_footer()
