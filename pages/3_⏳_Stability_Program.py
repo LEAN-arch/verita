@@ -1,19 +1,24 @@
+# ==============================================================================
+# Page 3: Stability Program Dashboard (Ultimate Version)
+#
+# Author: Principal Engineer SME
+# Last Updated: 2023-10-29 (Definitively Corrected Version)
+#
+# Description:
+# This module provides a comprehensive suite for analyzing drug stability data,
+# directly supporting shelf-life determination and regulatory filings.
+# ==============================================================================
+
 import streamlit as st
 import pandas as pd
-from veritas_core import session, auth
+from veritas_core import bootstrap, session
 from veritas_core.engine import analytics, plotting
 
-# --- 1. PAGE CONFIGURATION ---
-st.set_page_config(
-    page_title="Stability Dashboard",
-    page_icon="⏳",
-    layout="wide"
-)
+# --- 1. APPLICATION BOOTSTRAP ---
+bootstrap.run("Stability Dashboard", "⏳")
 
-# --- 2. APPLICATION INITIALIZATION & AUTH ---
-session.initialize_session()
+# --- 2. SESSION MANAGER ACCESS ---
 session_manager = session.SessionManager()
-auth.render_page()
 
 # --- 3. DATA LOADING & FILTERING ---
 stability_data = session_manager.get_data('stability')
@@ -38,12 +43,11 @@ if not lot_filter:
 
 filtered_df = stability_data[(stability_data['product_id'] == product_filter) & (stability_data['lot_id'].isin(lot_filter))]
 
-# --- 4. PAGE HEADER ---
+# --- 4. PAGE CONTENT ---
 st.title("⏳ Stability Program Dashboard")
 st.markdown("Monitor stability data, project shelf-life with statistical confidence, and perform multi-lot poolability analysis for regulatory submissions.")
 st.markdown("---")
 
-# --- 5. MULTI-LOT POOLABILITY ANALYSIS ---
 poolability_results = {}
 if len(lot_filter) > 1:
     st.header("Multi-Lot Poolability Assessment (ANCOVA)")
@@ -72,8 +76,6 @@ if len(lot_filter) > 1:
                 st.warning(f"Impurity data from these lots should NOT be pooled.", icon="⚠️")
     st.markdown("---")
 
-
-# --- 6. STABILITY TREND ANALYSIS ---
 st.header(f"Stability Profile for {product_filter} - Lot(s): {', '.join(lot_filter)}")
 
 if not filtered_df.empty:
@@ -109,5 +111,4 @@ if not filtered_df.empty:
 else:
     st.warning("No stability data available for the selected product and lot combination.")
 
-# --- 7. COMPLIANCE FOOTER ---
 auth.display_compliance_footer()
