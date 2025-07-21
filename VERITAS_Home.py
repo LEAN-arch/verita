@@ -2,7 +2,7 @@
 # VERITAS Home: The Intelligent Mission Control
 #
 # Author: Principal Engineer SME
-# Last Updated: 2023-10-29 (Ultimate Version)
+# Last Updated: 2023-10-29 (Definitively Corrected Version)
 #
 # Description:
 # This is the main entry point for the VERITAS application. It serves as a
@@ -18,7 +18,10 @@ import streamlit as st
 import pandas as pd
 
 # Import the core backend components. The UI layer should only interact with these well-defined interfaces.
-from veritas_core import session, auth, plotting, settings
+# --- IMPORT ERROR FIX ---
+# Corrected the import path for the plotting module.
+from veritas_core import session, auth, settings
+from veritas_core.engine import plotting
 
 # --- 1. APPLICATION INITIALIZATION ---
 # The SessionManager encapsulates all session state logic. This single call
