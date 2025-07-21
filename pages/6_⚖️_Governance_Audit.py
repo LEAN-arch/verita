@@ -8,15 +8,6 @@
 # This module is the central command center for all GxP compliance, data
 # integrity, and system governance activities. It provides the tools necessary
 # to demonstrate control and traceability to auditors and stakeholders.
-#
-# Key Upgrades:
-# - Visual Data Lineage Graph: Replaces the simple text timeline with a dynamic,
-#   interactive graph visualization (using Graphviz). This provides an
-#   unambiguous, end-to-end map of a data record's journey through the system.
-# - Comprehensive E-Signature Log: A dedicated, searchable log for all
-#   21 CFR Part 11-compliant electronic signature events.
-# - Enriched Audit Trail Explorer: The main audit trail is now more powerful,
-#   with enhanced filtering and clear iconography.
 # ==============================================================================
 
 import streamlit as st
@@ -24,8 +15,6 @@ import pandas as pd
 from datetime import datetime
 
 # Import the core backend components.
-# --- IMPORT ERROR FIX ---
-# Corrected the import path for the plotting module.
 from veritas_core import session, auth
 from veritas_core.engine import plotting
 
@@ -44,7 +33,6 @@ st.markdown("---")
 # --- 4. UI TABS FOR DIFFERENT GOVERNANCE VIEWS ---
 tab1, tab2, tab3 = st.tabs(["🔍 **Audit Trail Explorer**", "🧬 **Visual Data Lineage**", "✍️ **E-Signature Log**"])
 
-# --- TAB 1: AUDIT TRAIL EXPLORER ---
 with tab1:
     st.header("Interactive Audit Trail Explorer")
     st.info("Search, filter, and export the immutable, 21 CFR Part 11-compliant audit trail for all system activities.")
@@ -78,16 +66,13 @@ with tab1:
         type="primary"
     )
 
-# --- TAB 2: VISUAL DATA LINEAGE ---
 with tab2:
     st.header("Visual Data Lineage Tracer")
     st.info("Trace the complete history of any data record from creation to final state. This provides an end-to-end, auditable map of a record's lifecycle.")
     
-    # Use a selectbox for a better user experience, pre-populated with interesting examples.
     valid_ids = sorted([str(i) for i in audit_data['Record ID'].unique() if i and i != 'N/A' and not i.startswith("system")])
     
     if valid_ids:
-        # Find a good default example with many events
         record_counts = audit_data['Record ID'].value_counts()
         if not record_counts.empty:
             good_example_id = record_counts.idxmax()
@@ -103,18 +88,15 @@ with tab2:
         
         if record_id:
             with st.spinner("Generating lineage graph..."):
-                # The plotting engine now contains the logic to build the graph from the audit trail data.
                 lineage_fig = plotting.plot_data_lineage_graph(audit_data, record_id)
                 st.graphviz_chart(lineage_fig)
     else:
         st.warning("No traceable records found in the audit log.")
         
-# --- TAB 3: E-SIGNATURE LOG ---
 with tab3:
     st.header("Electronic Signature Log")
     st.info("A live, filtered view of all electronic signature events, demonstrating compliance with 21 CFR Part 11.")
     
-    # This is a live, filtered view of the main audit trail.
     sig_df = session_manager.get_signatures_log()
     
     if not sig_df.empty:
