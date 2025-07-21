@@ -1,4 +1,3 @@
-```python
 # ==============================================================================
 # Page 6: Governance & Audit Hub
 #
@@ -10,7 +9,7 @@
 # and system governance in the VERITAS application. It includes three tabs:
 # 1. Audit Trail Explorer: Filter and export 21 CFR Part 11-compliant audit trails.
 # 2. Visual Data Lineage: Trace the lifecycle of data records.
-# 3. Electronic Signature Log: View e-signature events for compliance.
+# 3. Electronic Signature Log: Display e-signature events.
 # The module integrates with veritas_core modules for session management, authentication,
 # and plotting, ensuring robust error handling and data validation.
 # ==============================================================================
@@ -43,6 +42,8 @@ def main() -> None:
     # --- 1. Page Setup and Authentication ---
     try:
         session_manager = session.SessionManager()
+        if not hasattr(session_manager, 'settings') or not hasattr(session_manager.settings, 'app'):
+            raise ValueError("session_manager.settings.app not found")
         session_manager.initialize_page("Governance & Audit", "⚖️")
         # Placeholder for authentication check (requires integration with auth system)
         if 'username' not in st.session_state or not auth.verify_credentials(st.session_state.username, None):
@@ -199,4 +200,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-```
