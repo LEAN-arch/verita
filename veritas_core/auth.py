@@ -2,7 +2,7 @@
 # Core Module: Authentication & Authorization
 #
 # Author: Principal Engineer SME
-# Last Updated: 2023-10-29 (Ultimate Version)
+# Last Updated: 2023-10-29 (Definitively Corrected Version)
 #
 # Description:
 # This module provides all core functions related to user authentication,
@@ -37,18 +37,29 @@ def _check_page_authorization():
     Internal function to check if the current user's role is authorized to
     view the currently executing Streamlit page. This is the core of RBAC.
     """
-    # Use st.page_link which is a modern way to get page info
-    current_page_script = os.path.basename(st.main_script_path)
+    # --- ATTRIBUTE ERROR FIX ---
+    # `st.main_script_path` is deprecated. The modern, correct attribute is
+    # `st.source_file_path`. This change resolves the AttributeError.
+    current_page_script = os.path.basename(st.source_file_path)
     user_role = st.session_state.get('user_role', '')
     
     # Get permissions from the Pydantic settings model
     page_permissions = settings.AUTH.page_permissions
+    
+    # Handle the main entry point (Home page) which might have a different name
+    # This makes the authorization more robust.
+    home_page_filename = "VERITAS_Home.py"
+    if current_page_script not in page_permissions:
+        # If the script isn't in permissions, check if it's the home page
+        if os.path.basename(st.script_run_context.get_script_run_ctx().main_script_path) == current_page_script:
+            current_page_script = home_page_filename
+
     authorized_roles = page_permissions.get(current_page_script)
     
     if authorized_roles is None or user_role not in authorized_roles:
         st.error("🔒 Access Denied")
         st.warning(f"Your assigned role ('{user_role}') does not have permission to view this page.")
-        st.page_link("VERITAS_Home.py", label="Return to Mission Control", icon="⬅️")
+        st.page_link(home_page_filename, label="Return to Mission Control", icon="⬅️")
         st.stop() # Stop script execution immediately
 
 def render_sidebar():
