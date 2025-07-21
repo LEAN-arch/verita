@@ -1,26 +1,31 @@
+# ==============================================================================
+# VERITAS Home: The Intelligent Mission Control
+#
+# Author: Principal Engineer SME
+# Last Updated: 2023-10-29 (Definitively Corrected Version)
+#
+# Description:
+# This is the true home page for the VERITAS application. It serves as a
+# personalized, action-oriented landing page for all users.
+# ==============================================================================
+
 import streamlit as st
 import pandas as pd
-from veritas_core import session, auth
+from veritas_core import bootstrap, session, auth
 from veritas_core.engine import plotting
 
-# --- 1. PAGE CONFIGURATION ---
-# This MUST be the first Streamlit command on each page.
-st.set_page_config(
-    page_title="VERITAS Mission Control",
-    page_icon="🏠",
-    layout="wide"
-)
+# --- 1. APPLICATION BOOTSTRAP ---
+# This single call handles page config, session initialization, and auth.
+bootstrap.run("VERITAS Mission Control", "🏠")
 
-# --- 2. APPLICATION INITIALIZATION & AUTH ---
-# This sequence is now the standard for every page.
-session.initialize_session() 
+# --- 2. SESSION MANAGER ACCESS ---
+# Once bootstrap runs, the session is guaranteed to be initialized.
 session_manager = session.SessionManager()
-auth.render_page() # This handles the auth check and sidebar rendering
 
 # --- 3. PAGE CONTENT ---
 st.title("🏠 VERITAS Mission Control")
+
 st.subheader("Your Mission Briefing", divider='blue')
-# ... (rest of the page logic is correct and remains the same)
 action_items = session_manager.get_user_action_items()
 if not action_items:
     st.success("✅ Your action item queue is clear. Well done!")
