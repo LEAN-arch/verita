@@ -6,12 +6,7 @@
 #
 # Description:
 # This is the main entry point for the VERITAS application. It serves as a
-# personalized, action-oriented landing page for all users. Its primary goals are:
-#   1. Initialize the application state securely and robustly using the SessionManager.
-#   2. Provide a personalized "Mission Briefing" with immediate action items.
-#   3. Offer high-level, strategic KPIs with embedded SME explanations.
-#   4. Enable quick navigation and data discovery via a global search.
-#   5. Direct users to specialized modules in the `pages/` directory for deep dives.
+# personalized, action-oriented landing page for all users.
 # ==============================================================================
 
 import streamlit as st
@@ -22,7 +17,6 @@ from veritas_core import session, auth
 from veritas_core.engine import plotting
 
 # --- 1. APPLICATION INITIALIZATION ---
-# The SessionManager encapsulates all session state logic.
 session_manager = session.SessionManager()
 session_manager.initialize_app("VERITAS Mission Control", "🧪")
 
@@ -67,7 +61,6 @@ if search_term:
 user_role = st.session_state.user_role
 st.header(f"'{user_role}' Command Center", anchor=False)
 
-# --- DTE Leadership View: Strategic & Operational Health ---
 if user_role == 'DTE Leadership':
     st.markdown("##### High-level overview of operational efficiency, program risk, and system health.")
     
