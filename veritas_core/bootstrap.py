@@ -1,110 +1,65 @@
+
+# ==============================================================================
+# Bootstrap Module for VERITAS Application
+#
+# Author: Principal Engineer SME
+# Last Updated: 2025-07-20
+#
+# Description:
+# Initializes the Streamlit application and session state for VERITAS pages.
+# Ensures proper setup of page configuration and session management with robust
+# error handling and logging.
+# ==============================================================================
+
 import streamlit as st
-import os
 import logging
-from typing import Dict, Any
+from typing import Any
+from . import config, repository, auth
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+# Configure logging for debugging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Validate imports at module level
-try:
-    import settings
-    import repository
-    import auth
-    if not all(hasattr(settings, 'app') and hasattr(settings.app, attr) for attr in ['help_url', 'version']):
-        logger.error("Required settings.app attributes missing")
-        raise ImportError("Invalid settings configuration")
-    if not hasattr(repository, 'MockDataRepository'):
-        logger.error("MockDataRepository not found in repository module")
-        raise ImportError("Invalid repository configuration")
-    if not all(hasattr(auth, func) for func in ['initialize_auth_state', 'render_common_elements']):
-        logger.error("Required auth functions missing")
-        raise ImportError("Invalid auth configuration")
-except ImportError as e:
-    logger.error(f"Module importation failed: {e}")
-    raise
 
 def run(page_title: str, page_icon: str) -> None:
     """
-    The definitive, fail-safe application bootstrap function.
-    This is called at the TOP of every page script. It is idempotent and
-    handles all core initialization and rendering tasks in the correct order.
+    Initialize a Streamlit page with the given title and icon.
 
     Args:
         page_title (str): The title of the page.
-        page_icon (str): The icon for the page.
+        page_icon (str): The icon for the page (emoji or image path).
+
+    Raises:
+        ValueError: If page_title or page_icon is invalid.
+        RuntimeError: If page initialization fails.
     """
-    # 1. Set Page Config (must be the first Streamlit command)
-    with st.session_state:
-        if 'page_config_set' not in st.session_state:
-            try:
-                st.set_page_config(
-                    page_title=f"{page_title} - VERITAS",
-                    page_icon=page_icon,
-                    layout="wide",
-                    initial_sidebar_state="expanded",
-                    menu_items={
-                        'Get Help': getattr(settings.app, 'help_url', 'https://example.com/help'),
-                        'About': f"VERITAS, Version {getattr(settings.app, 'version', 'N/A')}"
-                    }
-                )
-                st.session_state.page_config_set = True
-                logger.debug(f"Page config set: title={page_title}, icon={page_icon}")
-            except RuntimeError as e:
-                logger.warning(f"Page config already set or invalid: {e}")
-        else:
-            logger.debug("Page config already set, skipping")
-
-    # 2. Initialize Core Session State (only runs once per session)
-    with st.session_state:
-        if 'veritas_initialized' not in st.session_state:
-            try:
-                st.session_state.settings = settings
-                # Only create repository if not already initialized
-                if 'repo' not in st.session_state:
-                    st.session_state.repo = repository.MockDataRepository()
-                    logger.debug("MockDataRepository initialized")
-                
-                # Initialize data with error handling
-                try:
-                    st.session_state.hplc_data = st.session_state.repo.get_hplc_data()
-                except Exception as e:
-                    logger.error(f"Failed to load HPLC data: {e}")
-                    st.session_state.hplc_data = None
-                
-                try:
-                    st.session_state.deviations_data = st.session_state.repo.get_deviations_data()
-                except Exception as e:
-                    logger.error(f"Failed to load deviations data: {e}")
-                    st.session_state.deviations_data = None
-                
-                try:
-                    st.session_state.stability_data = st.session_state.repo.get_stability_data()
-                except Exception as e:
-                    logger.error(f"Failed to load stability data: {e}")
-                    st.session_state.stability_data = None
-                
-                try:
-                    st.session_state.audit_data = st.session_state.repo.get_audit_log()
-                except Exception as e:
-                    logger.error(f"Failed to load audit data: {e}")
-                    st.session_state.audit_data = None
-                
-                st.session_state.page_states = {}  # Kept for compatibility, purpose unclear
-                auth.initialize_auth_state()
-                st.session_state.veritas_initialized = True
-                logger.info("VERITAS Session Initialized Successfully")
-            except Exception as e:
-                logger.error(f"Session initialization failed: {e}")
-                st.error("Failed to initialize application session")
-                st.stop()
-
-    # 3. Render common UI elements and perform auth check for the current page
     try:
-        auth.render_common_elements()
-        logger.debug("Common elements rendered and auth checked")
+        if not isinstance(page_title, str) or not page_title.strip():
+            raise ValueError("page_title must be a non-empty string")
+        if not isinstance(page_icon, str) or not page_icon.strip():
+            raise ValueError("page_icon must be a non-empty string")
+        
+        # Set Streamlit page configuration
+        st.set_page_config(
+            page_title=page_title,
+            page_icon=page_icon,
+            layout="wide",
+            initial_sidebar_state="auto"
+        )
+        
+        # Initialize session state
+        if 'username' not in st.session_state:
+            st.session_state.username = None  # Placeholder; set via auth.login
+        if 'initialized' not in st.session_state:
+            st.session_state.initialized = True
+            logger.info(f"Initialized Streamlit page: {page_title}")
+        
+        # Validate configuration and repository
+        if not hasattr(config, 'app'):
+            raise ValueError("config.app not found")
+        if not hasattr(repository, 'get_data'):
+            raise ValueError("repository.get_data not found")
+        
     except Exception as e:
-        logger.error(f"Failed to render common elements or check auth: {e}")
-        st.error("Error rendering application elements")
-        st.stop()
+        logger.error(f"Failed to initialize page '{page_title}': {str(e)}")
+        st.error(f"Failed to initialize page '{page_title}'. Please contact support.")
+        raise RuntimeError(f"Page initialization failed: {str(e)}")
