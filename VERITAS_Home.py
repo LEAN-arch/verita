@@ -17,21 +17,16 @@
 import streamlit as st
 import pandas as pd
 
-# Import the core backend components. The UI layer should only interact with these well-defined interfaces.
-# --- IMPORT ERROR FIX ---
-# Corrected the import path for the plotting module.
-from veritas_core import session, auth, settings
+# Import the core backend components.
+from veritas_core import session, auth
 from veritas_core.engine import plotting
 
 # --- 1. APPLICATION INITIALIZATION ---
-# The SessionManager encapsulates all session state logic. This single call
-# handles page config, authentication, data loading, and analytics setup.
-# This is a robust pattern that keeps the UI code exceptionally clean.
+# The SessionManager encapsulates all session state logic.
 session_manager = session.SessionManager()
 session_manager.initialize_app("VERITAS Mission Control", "🧪")
 
 # --- 2. PERSONALIZED MISSION BRIEFING ---
-# This section makes the app immediately actionable and valuable to the user.
 st.subheader("Your Mission Briefing", divider='blue')
 action_items = session_manager.get_user_action_items()
 
@@ -48,8 +43,6 @@ else:
 st.markdown("---")
 
 # --- 3. GLOBAL ENTITY SEARCH ---
-# A powerful feature for a "10+ App" that demonstrates a focus on user
-# efficiency and operational velocity.
 st.sidebar.subheader("Global Search", divider='blue')
 search_term = st.sidebar.text_input(
     "Search by Lot, Study, or Instrument ID",
@@ -71,8 +64,6 @@ if search_term:
         st.sidebar.info(f"No results found for '{search_term}'.")
 
 # --- 4. ROLE-BASED STRATEGIC DASHBOARD ---
-# The main content of the homepage is tailored to the user's role, providing
-# the most relevant strategic overview.
 user_role = st.session_state.user_role
 st.header(f"'{user_role}' Command Center", anchor=False)
 
@@ -80,67 +71,32 @@ st.header(f"'{user_role}' Command Center", anchor=False)
 if user_role == 'DTE Leadership':
     st.markdown("##### High-level overview of operational efficiency, program risk, and system health.")
     
-    # --- KPIs with Embedded SME Explanations ---
-    # Each metric is now a mini-lesson, showcasing deep domain knowledge.
     kpi_cols = st.columns(4)
     with kpi_cols[0]:
         active_devs = session_manager.get_kpi('active_deviations')
-        st.metric(
-            "Active Deviations",
-            active_devs['value'],
-            help=active_devs['sme_info']
-        )
+        st.metric("Active Deviations", active_devs['value'], help=active_devs['sme_info'])
     with kpi_cols[1]:
         dqs = session_manager.get_kpi('data_quality_score')
-        st.metric(
-            "Data Quality Score (DQS)",
-            f"{dqs['value']:.1f}%",
-            f"{dqs['delta']:.1f}% vs Target",
-            help=dqs['sme_info']
-        )
+        st.metric("Data Quality Score (DQS)", f"{dqs['value']:.1f}%", f"{dqs['delta']:.1f}% vs Target", help=dqs['sme_info'])
     with kpi_cols[2]:
         fpy = session_manager.get_kpi('first_pass_yield')
-        st.metric(
-            "First Pass Yield (FPY)",
-            f"{fpy['value']:.1f}%",
-            f"{fpy['delta']:.1f}%",
-            help=fpy['sme_info']
-        )
+        st.metric("First Pass Yield (FPY)", f"{fpy['value']:.1f}%", f"{fpy['delta']:.1f}%", help=fpy['sme_info'])
     with kpi_cols[3]:
         mttr = session_manager.get_kpi('mean_time_to_resolution')
-        st.metric(
-            "Deviation MTTR (Days)",
-            f"{mttr['value']:.1f}",
-            f"{mttr['delta']:.1f} Days",
-            delta_color="inverse",
-            help=mttr['sme_info']
-        )
+        st.metric("Deviation MTTR (Days)", f"{mttr['value']:.1f}", f"{mttr['delta']:.1f} Days", delta_color="inverse", help=mttr['sme_info'])
 
     st.markdown("---")
     
-    # --- Strategic Visualizations ---
     col1, col2 = st.columns((6, 4))
     with col1:
         st.subheader("Program Risk Matrix", divider='gray')
-        # This new plot provides an instant strategic overview of all programs.
         risk_matrix_data = session_manager.get_risk_matrix_data()
-        st.plotly_chart(
-            plotting.plot_program_risk_matrix(risk_matrix_data),
-            use_container_width=True
-        )
-
+        st.plotly_chart(plotting.plot_program_risk_matrix(risk_matrix_data), use_container_width=True)
     with col2:
         st.subheader("QC Failure Hotspots", divider='gray')
-        # The Pareto chart remains a powerful tool for identifying systemic issues.
         pareto_data = session_manager.get_pareto_data()
-        st.plotly_chart(
-            plotting.plot_pareto_chart(pareto_data),
-            use_container_width=True
-        )
+        st.plotly_chart(plotting.plot_pareto_chart(pareto_data), use_container_width=True)
 
-# --- Scientist, Director, Analyst Views: Focus on Navigation ---
-# For other roles, the homepage is a clean launchpad, as their primary
-# work happens in the specialized modules.
 else:
     st.info("💡 **Welcome to VERITAS.** Your mission-critical tools are available in the sidebar. Your personalized **Mission Briefing** above will guide you to urgent tasks.")
     st.markdown("""
@@ -154,5 +110,4 @@ else:
     """)
 
 # --- 5. COMPLIANCE FOOTER ---
-# The compliance footer is a non-negotiable for a GxP application.
 auth.display_compliance_footer()
