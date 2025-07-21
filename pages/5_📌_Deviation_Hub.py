@@ -1,8 +1,8 @@
-# ='s=============================================================================
+# ==============================================================================
 # Page 5: Deviation Management Hub (Ultimate Version)
 #
 # Author: Principal Engineer SME
-# Last Updated: 2023-10-29 (Ultimate Version)
+# Last Updated: 2023-10-29 (Definitively Corrected Version)
 #
 # Description:
 # This module is the central, interactive workspace for managing the lifecycle
@@ -10,8 +10,8 @@
 # single source of truth for investigations.
 #
 # Key Upgrades:
-# - Investigation Pane: Clicking a card opens a detailed modal/view with tabs
-#   for linked data, Root Cause Analysis (RCA), and CAPA planning.
+# - Investigation Pane: Clicking a card opens a detailed view with tabs for
+#   linked data, Root Cause Analysis (RCA), and CAPA planning.
 # - Structured RCA & CAPA Forms: Provides guided forms for investigators to
 #   document their findings in a standardized way, improving consistency.
 # - Seamless Workflow Integration: Deviations created from the QC Center appear
@@ -22,6 +22,8 @@ import streamlit as st
 import pandas as pd
 
 # Import the core backend components.
+# --- IMPORT ERROR FIX ---
+# This file now correctly imports only the necessary high-level modules.
 from veritas_core import session, auth
 
 # --- 1. PAGE SETUP AND AUTHENTICATION ---
@@ -44,13 +46,13 @@ with st.expander("ℹ️ SME Overview: Digitalizing the Investigation Workflow")
     """)
 
 # --- 4. INVESTIGATION PANE (MODAL/EXPANDER LOGIC) ---
-# This is the core "Ultimate App" feature for this page.
-# We check if a card has been selected (via query params) and display its details.
+# This feature makes the hub an active workspace, not just a viewer.
 query_params = st.query_params
 selected_dev_id = query_params.get("selected_dev_id")
 
 if selected_dev_id:
     st.header(f"Investigation Pane: {selected_dev_id}", divider='blue')
+    # The SessionManager handles the logic of retrieving the specific deviation details.
     deviation_data = session_manager.get_deviation_details(selected_dev_id)
     
     if deviation_data.empty:
@@ -59,7 +61,6 @@ if selected_dev_id:
     else:
         dev = deviation_data.iloc[0]
         
-        # --- Display the detailed pane with tabs ---
         detail_tab, data_tab, rca_tab, capa_tab = st.tabs([
             "📝 Details", "🔗 Linked Data", "🔎 Root Cause Analysis", "🛠️ CAPA Plan"
         ])
@@ -95,13 +96,12 @@ if selected_dev_id:
 
         col1, col2, _ = st.columns([1, 1, 4])
         if col1.button("💾 Save Investigation", type="primary"):
-            # Here, you would call a backend function to save the updated investigation details to the database.
+            # In a real app, this would call a SessionManager method to save the updated investigation details.
             st.success(f"Investigation details for {selected_dev_id} saved.")
         
         if col2.page_link("pages/5_📌_Deviation_Hub.py", label="Close Pane", icon="✖️"):
             pass
         st.markdown("---")
-
 
 # --- 5. ACTIONABLE KANBAN BOARD ---
 st.header("Deviation Workflow Board", divider='blue')
@@ -109,28 +109,24 @@ kanban_cols = st.columns(len(dev_config.kanban_states))
 
 for i, status in enumerate(dev_config.kanban_states):
     with kanban_cols[i]:
-        # Filter the deviations for the current status column
         cards_in_column = deviations_df[deviations_df['status'] == status]
         st.subheader(f"{status} ({len(cards_in_column)})", anchor=False)
         st.markdown("---")
         
         for index, card_data in cards_in_column.iterrows():
-            # Render a link that opens the investigation pane using query parameters
-            st.page_link(
-                f"pages/5_📌_Deviation_Hub.py?selected_dev_id={card_data['id']}",
-                label=f"**{card_data['id']}**: {card_data['title']}",
-                icon=" investigative_pane_icon" # Placeholder
-            )
+            card_id = card_data['id']
+            # Using st.popover for a cleaner, more modern UI than a full page reload/navigation
+            with st.popover(f"**{card_id}**: {card_data['title']}", use_container_width=True):
+                st.markdown(f"**Priority:** {card_data['priority']}")
+                st.markdown(f"**Linked Record:** `{card_data['linked_record']}`")
+                # This provides a direct link to the full investigation pane for editing
+                st.page_link(f"pages/5_📌_Deviation_Hub.py?selected_dev_id={card_id}", label="Open Full Investigation Pane...", icon="➡️")
 
-            # --- Renders the card content and "Advance" button ---
-            color = dev_config.priority_colors.get(card_data['priority'], "#FFFFFF")
-            st.markdown(f"<div style='font-size: 0.8em; color: grey; padding-left: 5px;'>Linked Record: {card_data['linked_record']}</div>", unsafe_allow_html=True)
-            
             # The "Advance" button logic
-            if status != dev_config.kanban_states[-1]: # If not in the last column
-                if st.button("▶️ Advance Status", key=f"advance_{card_data['id']}", help=f"Move from {status} to next stage"):
+            if status != dev_config.kanban_states[-1]:
+                if st.button("▶️ Advance Status", key=f"advance_{card_id}", help=f"Move from {status} to next stage"):
                     # The SessionManager handles the logic of updating the state and logging the audit.
-                    session_manager.advance_deviation_status(card_data['id'], status)
+                    session_manager.advance_deviation_status(card_id, status)
                     st.rerun()
             st.markdown("<hr style='margin-top: 5px; margin-bottom: 5px;'/>", unsafe_allow_html=True)
 
