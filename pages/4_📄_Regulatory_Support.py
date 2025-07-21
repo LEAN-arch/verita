@@ -24,15 +24,14 @@ import pandas as pd
 
 # Import the core backend components.
 # --- IMPORT ERROR FIX ---
-# Corrected the import path for the engine modules.
+# Corrected the import path for the engine modules and removed direct backend calls.
 from veritas_core import session, auth
-from veritas_core.engine import analytics, plotting, reporting
 
 # --- 1. PAGE SETUP AND AUTHENTICATION ---
 session_manager = session.SessionManager()
 session_manager.initialize_page("Regulatory Support", "📄")
 
-# --- 2. DATA LOADING & FILTERING ---
+# --- 2. DATA LOADING & CONFIG ---
 hplc_data = session_manager.get_data('hplc')
 cpk_config = session_manager.settings.app.process_capability
 
@@ -83,7 +82,8 @@ commentary = st.text_area(
 
 if st.button(f"Generate DRAFT {report_format} Report", type="primary"):
     with st.spinner(f"Assembling DRAFT {report_format} report..."):
-        # The session manager now orchestrates the report generation process
+        # The session manager now orchestrates the entire report generation process.
+        # This is a key architectural improvement, keeping the UI clean.
         session_manager.generate_draft_report(
             study_id=study_id,
             report_df=report_df,
@@ -95,13 +95,11 @@ if st.button(f"Generate DRAFT {report_format} Report", type="primary"):
     st.success(f"DRAFT {report_format} report generated successfully. Proceed to sign and lock.")
 
 # --- 5. E-SIGNATURE AND DOWNLOAD WORKFLOW ---
-# This entire section is new and demonstrates a GxP-compliant workflow.
 draft_report = session_manager.get_page_state('draft_report')
 if draft_report:
     st.markdown("---")
     st.header("3. Sign & Lock Report")
     
-    # Display a preview of the draft report
     st.info(f"**Report Ready for Signature:** `{draft_report['filename']}`")
     st.download_button(
         label="Download DRAFT Watermarked Version for Review",
@@ -114,12 +112,9 @@ if draft_report:
 
     with st.form("e_signature_form"):
         st.subheader("21 CFR Part 11 Electronic Signature", anchor=False)
-        
         username_input = st.text_input("Username", value=st.session_state.username, disabled=True)
         password_input = st.text_input("Password", type="password", help="Enter your system password.")
-        # Simulating 2FA adds a layer of realism and demonstrates security awareness.
         auth_code_input = st.text_input("2FA Authentication Code", help="Enter the 6-digit code from your authenticator app.")
-        
         signing_reason = st.selectbox(
             "Reason for Signing:",
             options=["Author Approval", "Technical Review", "QA Final Approval"]
@@ -133,7 +128,7 @@ if draft_report:
                 with st.spinner("Applying secure signature and finalizing report..."):
                     # The session manager handles the finalization and audit logging.
                     final_report = session_manager.finalize_and_sign_report(signing_reason)
-                    st.session_state['final_report'] = final_report # Store final report for download
+                    st.session_state['final_report'] = final_report
                 st.success(f"Report **{final_report['filename']}** has been successfully signed and locked.")
                 st.balloons()
             else:
