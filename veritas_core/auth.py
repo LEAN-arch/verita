@@ -1,3 +1,4 @@
+
 # ==============================================================================
 # Authentication Module for VERITAS Application
 #
@@ -71,4 +72,3 @@ def display_compliance_footer() -> None:
     except Exception as e:
         logger.error(f"Failed to render compliance footer: {str(e)}")
         raise RuntimeError(f"Compliance footer rendering failed: {str(e)}")
-
