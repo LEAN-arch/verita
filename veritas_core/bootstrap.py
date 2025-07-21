@@ -63,3 +63,4 @@ def run(page_title: str, page_icon: str) -> None:
         logger.error(f"Failed to initialize page '{page_title}': {str(e)}")
         st.error(f"Failed to initialize page '{page_title}'. Please contact support.")
         raise RuntimeError(f"Page initialization failed: {str(e)}")
+
