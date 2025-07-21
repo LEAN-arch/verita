@@ -2,7 +2,7 @@
 # Core Module: Abstracted Data Repository
 #
 # Author: Principal Engineer SME
-# Last Updated: 2023-10-29 (Ultimate Version)
+# Last Updated: 2023-10-29 (Definitively Corrected Version)
 #
 # Description:
 # This module implements the Repository Pattern to completely abstract the
@@ -92,7 +92,6 @@ class MockDataRepository(DataRepository):
             'analyst': self.rng.choice(['A. Turing', 'M. Curie', 'R. Franklin', 'L. Meitner'], size=num_samples)
         }
         df = pd.DataFrame(data)
-        # Inject anomalies and clip values...
         df.loc[10, 'Purity'] = 97.8 
         df.loc[50, 'Bio-activity'] = 205.0
         df['Purity'] = df['Purity'].clip(97.0, 100)
@@ -125,7 +124,9 @@ class MockDataRepository(DataRepository):
 
     def _generate_audit_trail(self, num_entries=300):
         users = ['DTE-System', 'A. Turing', 'R. Franklin', 'QA.Bot', 'M. Curie']
-        actions = list(settings.APP.audit_trail.action_icons.keys())
+        # --- ATTRIBUTE ERROR FIX ---
+        # Changed settings.APP to settings.app to match the corrected settings file.
+        actions = list(settings.app.audit_trail.action_icons.keys())
         record_ids = self.hplc_df['sample_id'].tolist() + self.deviations_df['id'].tolist()
         log = []
         for i in range(num_entries):
@@ -167,9 +168,6 @@ class MockDataRepository(DataRepository):
 
 
 # --- 3. Concrete Implementation: Production Database ---
-# This class is a template for what would be built to connect to a real database
-# like Snowflake. It fulfills the same contract.
-
 class ProdDataRepository(DataRepository):
     """
     A concrete implementation of the DataRepository that connects to and queries
@@ -177,15 +175,10 @@ class ProdDataRepository(DataRepository):
     NOTE: This is a placeholder for the actual production implementation.
     """
     def __init__(self, conn_params: dict):
-        # In a real app, this would use the params to create a live DB connection
-        # self.connection = snowflake.connector.connect(**conn_params)
         st.info("NOTE: Using **Mock Repository**. Production database connector is not yet implemented.")
-        self.mock_repo = MockDataRepository() # For demonstration, this class will just wrap the mock repo.
+        self.mock_repo = MockDataRepository()
 
-    # --- In a real implementation, these methods would execute SQL queries ---
     def get_hplc_data(self) -> pd.DataFrame:
-        # sql = "SELECT * FROM PROD_DATA_WAREHOUSE.VERITAS_REPORTING.HPLC_RESULTS_VW;"
-        # return pd.read_sql(sql, self.connection)
         return self.mock_repo.get_hplc_data()
 
     def get_deviations_data(self) -> pd.DataFrame:
@@ -198,9 +191,6 @@ class ProdDataRepository(DataRepository):
         return self.mock_repo.get_audit_log()
     
     def write_audit_log(self, user: str, action: str, details: str, record_id: str = 'N/A'):
-        # In production, this would execute an INSERT statement.
-        # with self.connection.cursor() as cursor:
-        #     cursor.execute("INSERT INTO ...", (params))
         self.mock_repo.write_audit_log(user, action, details, record_id)
 
     def update_deviation_status(self, dev_id: str, new_status: str):
