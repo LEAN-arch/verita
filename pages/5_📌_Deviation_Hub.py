@@ -1,18 +1,12 @@
 import streamlit as st
 import pandas as pd
-from veritas_core import session, auth
+from veritas_core import bootstrap, session, auth
 
-# --- 1. PAGE CONFIGURATION ---
-st.set_page_config(
-    page_title="Deviation Hub",
-    page_icon="📌",
-    layout="wide"
-)
+# --- 1. APPLICATION BOOTSTRAP ---
+bootstrap.run("Deviation Hub", "📌")
 
-# --- 2. APPLICATION INITIALIZATION & AUTH ---
-session.initialize_session()
+# --- 2. SESSION MANAGER ACCESS ---
 session_manager = session.SessionManager()
-auth.render_page()
 
 # --- 3. DATA LOADING & CONFIG ---
 deviations_df = session_manager.get_data('deviations')
